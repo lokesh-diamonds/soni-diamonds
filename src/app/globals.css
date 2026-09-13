@@ -1,0 +1,342 @@
+@import "tailwindcss";
+
+/* ============================================================
+   SONI DIAMONDS — Design tokens
+   Dark minimal aesthetic · champagne gold accents · editorial
+   Diamond-focused fine jewellery
+   ============================================================ */
+@theme {
+  --color-ink: #0a0a0b;
+  --color-ink-soft: #121214;
+  --color-ink-panel: #17171a;
+  --color-line: #2a2a2e;
+  --color-line-soft: #202024;
+
+  --color-bone: #f4f1ea;
+  --color-bone-dim: #b8b4ab;
+  --color-bone-faint: #7c7a73;
+
+  --color-gold: #c8a55b;
+  --color-gold-bright: #e2c485;
+  --color-gold-deep: #9a7d3f;
+
+  --font-serif: "Cormorant Garamond", "Times New Roman", serif;
+  --font-sans: "Jost", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --tracking-luxe: 0.32em;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-ink);
+    color: var(--color-bone);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-gold);
+    color: var(--color-ink);
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-serif);
+    font-weight: 300;
+    letter-spacing: 0.01em;
+  }
+
+  /* Thin luxury scrollbar */
+  ::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-ink);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-gold-deep);
+  }
+}
+
+@layer components {
+  .container-luxe {
+    width: 100%;
+    max-width: 1360px;
+    margin-inline: auto;
+    padding-inline: 1.5rem;
+  }
+  @media (min-width: 768px) {
+    .container-luxe {
+      padding-inline: 2.5rem;
+    }
+  }
+
+  .eyebrow {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-luxe);
+    color: var(--color-gold);
+  }
+
+  .link-underline {
+    position: relative;
+  }
+  .link-underline::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -3px;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .link-underline:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+
+  .btn-gold {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 1rem 2.25rem;
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-luxe);
+    color: var(--color-ink);
+    background: var(--color-gold);
+    border: 1px solid var(--color-gold);
+    transition: background 0.35s ease, color 0.35s ease;
+  }
+  .btn-gold:hover {
+    background: var(--color-gold-bright);
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 1rem 2.25rem;
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-luxe);
+    color: var(--color-bone);
+    background: transparent;
+    border: 1px solid var(--color-line);
+    transition: border-color 0.35s ease, color 0.35s ease;
+  }
+  .btn-ghost:hover {
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+  }
+
+  .field {
+    width: 100%;
+    background: var(--color-ink-soft);
+    border: 1px solid var(--color-line);
+    padding: 0.9rem 1rem;
+    font-size: 0.875rem;
+    color: var(--color-bone);
+    transition: border-color 0.3s ease;
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-gold);
+  }
+  .field::placeholder {
+    color: var(--color-bone-faint);
+  }
+
+  select, select.field {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23c8a55b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1.15em 1.15em;
+    padding-right: 2.5rem;
+    border-radius: 0.75rem;
+  }
+
+  select option {
+    background-color: #17171a !important;
+    color: #f4f1ea !important;
+    padding: 10px 14px !important;
+    font-size: 0.9rem;
+  }
+
+  .hairline {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--color-line),
+      transparent
+    );
+  }
+}
+
+@layer utilities {
+  .text-gold-gradient {
+    background: linear-gradient(
+      100deg,
+      var(--color-gold-deep),
+      var(--color-gold-bright) 45%,
+      var(--color-gold)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  .animate-marquee {
+    animation: marquee 34s linear infinite;
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Hero — slow Ken Burns drift on the active slide */
+  .animate-kenburns {
+    animation: kenburns 8s ease-out forwards;
+  }
+  @keyframes kenburns {
+    from {
+      transform: scale(1.06) translate3d(1.5%, 1%, 0);
+    }
+    to {
+      transform: scale(1.12) translate3d(-1.5%, -1%, 0);
+    }
+  }
+
+  /* Hero — copy enters on each slide change */
+  .hero-copy > * {
+    opacity: 0;
+    transform: translateY(22px);
+    animation: heroIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .hero-copy > *:nth-child(1) { animation-delay: 0.05s; }
+  .hero-copy > *:nth-child(2) { animation-delay: 0.15s; }
+  .hero-copy > *:nth-child(3) { animation-delay: 0.28s; }
+  .hero-copy > *:nth-child(4) { animation-delay: 0.4s; }
+  @keyframes heroIn {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Hero — progress bar fill for the active dot */
+  .animate-progress {
+    animation: progressFill 6s linear forwards;
+  }
+  @keyframes progressFill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+
+  /* Slow rotation for the diamond motif */
+  .animate-spin-slow {
+    animation: spin 26s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Gentle float */
+  .animate-float {
+    animation: float 7s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+
+  /* Sparkle pulse */
+  .animate-sparkle {
+    animation: sparkle 3.2s ease-in-out infinite;
+  }
+  @keyframes sparkle {
+    0%, 100% { opacity: 0.15; transform: scale(0.7); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  /* Visiting card — continuous horizontal auto-scroll (two copies, -50%) */
+  .animate-card-scroll {
+    animation: card-scroll 22s linear infinite;
+  }
+  @keyframes card-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Modal fade-in */
+  .animate-fade-in {
+    animation: fade-in 0.35s ease-out;
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+    .animate-marquee,
+    .animate-kenburns,
+    .animate-progress,
+    .animate-spin-slow,
+    .animate-float,
+    .animate-sparkle,
+    .animate-card-scroll {
+      animation: none;
+    }
+    .hero-copy > * {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
