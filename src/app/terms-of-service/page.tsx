@@ -9,6 +9,15 @@ export const metadata: Metadata = {
 
 const sections: LegalSection[] = [
   {
+    id: "entity",
+    heading: "Business Entity & Registration Details",
+    body: [
+      "SONI DIAMONDS is an established diamond jewellery manufacturer, wholesaler, and retailer operating out of LB Char Rasta, Mahidharpura, Surat, Gujarat, India under the direct leadership of Managing Director Lokesh Soni.",
+      "Official Permanent Account Number (PAN): AGAFS7226G",
+      "Official Goods and Services Tax Identification Number (GSTIN): 27POMPS2282M1ZS",
+    ],
+  },
+  {
     id: "acceptance",
     heading: "Acceptance of Terms",
     body: [

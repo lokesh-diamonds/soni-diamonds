@@ -244,7 +244,7 @@ export default function Chatbot() {
               onClick={() => handleSend("What are today's live gold rates and making charges?")}
               className="shrink-0 px-2.5 py-1 rounded-full border border-gold/30 bg-gold/5 text-bone-dim hover:text-gold hover:border-gold"
             >
-              📊 Today's Rates
+              📊 Today&apos;s Rates
             </button>
             <button
               onClick={() => handleSend("How are jewellery prices calculated at Soni Diamonds?")}

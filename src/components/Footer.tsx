@@ -59,6 +59,10 @@ export default function Footer() {
                   Instagram
                 </a>
               </p>
+              <p className="pt-1.5 text-[0.72rem] text-gold/80 flex flex-wrap gap-x-3 gap-y-1 font-mono">
+                <span>GSTIN: <strong className="text-bone-dim">27POMPS2282M1ZS</strong></span>
+                <span>PAN: <strong className="text-bone-dim">AGAFS7226G</strong></span>
+              </p>
             </div>
           </div>
 

@@ -66,10 +66,12 @@ Example for 5g 18K Gold ring: (5g × ₹${liveRates.gold18k.toLocaleString("en-I
 ATELIER & CONTACT DETAILS:
 - Founder & Managing Director: Lokesh Soni
 - Atelier & Wholesale Address: LB Char Rasta, Mahidharpura, Surat, Gujarat, India
+- Official GSTIN: 27POMPS2282M1ZS
+- Official PAN: AGAFS7226G
 - Direct Phone / WhatsApp: +91 93098 52270
 - Email: lokesh@sonidiamonds.in
 - Website: https://sonidiamonds.in
-- Instagram: https://instagram.com/sonidiamonds
+- Instagram: https://instagram.com/sonidharpura / https://instagram.com/sonidiamonds
 - Atelier Hours: Monday – Saturday, 11:00 AM – 7:30 PM (Meetings by prior appointment)
 
 OUR 7 SIGNATURE COLLECTIONS:
@@ -217,6 +219,15 @@ You can also use our interactive Live Rate Calculator & Unit Converter on our we
     ) {
       fallbackReply =
         "We offer 7 signature diamond collections: The Solitaire, The Halo, The Three Stone, The Rivière (tennis necklaces & bangles), Everyday Brilliance (studs & pendants), Bridal Sets (mangalsutras & chokers), and Gentleman (men's bands & cufflinks). All built with flat ₹850/g making charges.";
+    } else if (
+      lastUserMessage.includes("gst") ||
+      lastUserMessage.includes("gstin") ||
+      lastUserMessage.includes("pan") ||
+      lastUserMessage.includes("tax") ||
+      lastUserMessage.includes("regis")
+    ) {
+      fallbackReply =
+        "Soni Diamonds Official Business Credentials:\n• GSTIN: 27POMPS2282M1ZS\n• PAN: AGAFS7226G\n• Address: LB Char Rasta, Mahidharpura, Surat, Gujarat, India\n• Managing Director: Lokesh Soni (lokesh@sonidiamonds.in / +91 93098 52270)";
     } else if (
       lastUserMessage.includes("shipping") ||
       lastUserMessage.includes("delivery") ||

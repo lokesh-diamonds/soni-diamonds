@@ -273,6 +273,15 @@ export default function ContactClient() {
               ))}
             </ul>
 
+            {/* Official Registration & Tax Info */}
+            <div className="mt-6 rounded-xl border border-gold/30 bg-ink-panel/70 p-4 font-mono text-xs text-bone-dim space-y-1.5 shadow-md">
+              <p className="eyebrow text-gold font-serif text-[0.65rem]">Official Business Credentials</p>
+              <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-line-soft">
+                <span>GSTIN: <strong className="text-bone font-semibold select-all">27POMPS2282M1ZS</strong></span>
+                <span>PAN: <strong className="text-bone font-semibold select-all">AGAFS7226G</strong></span>
+              </div>
+            </div>
+
             {/* Location & Google Map */}
             <div className="mt-8 rounded-xl border border-gold/40 bg-ink-panel p-6 shadow-xl overflow-hidden">
               <div className="flex items-center justify-between flex-wrap gap-4 pb-4 border-b border-line-soft">
