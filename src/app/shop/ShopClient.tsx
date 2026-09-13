@@ -145,6 +145,8 @@ export default function ShopClient() {
     return list;
   }, [selected, sort, showNewOnly, pricePicks]);
 
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
   return (
     <>
       <section className="container-luxe pt-16 pb-10 md:pt-24">
@@ -163,11 +165,30 @@ export default function ShopClient() {
       </section>
 
       <section className="container-luxe pb-28">
-        <div className="grid gap-12 lg:grid-cols-[260px_1fr]">
-          {/* Sticky filter sidebar */}
-          <aside className="lg:sticky lg:top-28 lg:self-start">
+        <div className="grid gap-8 lg:gap-12 lg:grid-cols-[260px_1fr]">
+          {/* Mobile Filter Toggle Button */}
+          <div className="lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-gold/40 bg-ink-panel text-gold font-serif text-sm shadow-md"
+            >
+              <span className="flex items-center gap-2">
+                <span>🔍 Filter &amp; Refine</span>
+                {activeCount > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-gold text-black text-xs font-sans font-bold">
+                    {activeCount}
+                  </span>
+                )}
+              </span>
+              <span>{mobileFilterOpen ? "▲ Hide Filters" : "▼ Show Filters"}</span>
+            </button>
+          </div>
+
+          {/* Sticky filter sidebar (collapsible on mobile, persistent on lg+) */}
+          <aside className={`lg:block lg:sticky lg:top-28 lg:self-start ${mobileFilterOpen ? "block" : "hidden lg:block"}`}>
             <div className="flex items-center justify-between">
-              <p className="eyebrow">Filter</p>
+              <p className="eyebrow">Filter Options</p>
               {activeCount > 0 && (
                 <button
                   onClick={clearAll}

@@ -32,7 +32,7 @@ const METALS = [
   { id: "Platinum", label: "Platinum (950 Fine)", defaultRate: 3400 },
 ];
 
-export default function LiveRateCalculator() {
+export default function LiveRateCalculator({ embedded = false }: { embedded?: boolean }) {
   const [location, setLocation] = useState("Surat");
   const [rates, setRates] = useState<RateData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,15 +99,30 @@ export default function LiveRateCalculator() {
       }
     };
 
-    window.addEventListener("soni_location_changed" as any, handleLocChange);
-    return () => window.removeEventListener("soni_location_changed" as any, handleLocChange);
+    window.addEventListener("soni_location_changed", handleLocChange as EventListener);
+    return () => {
+      window.removeEventListener("soni_location_changed", handleLocChange as EventListener);
+    };
   }, []);
 
-  const handleCityChange = (city: string) => {
-    setLocation(city);
-    localStorage.setItem("soni_user_location", city);
-    window.dispatchEvent(new CustomEvent("soni_location_changed", { detail: city }));
-    fetchRates(city);
+  const handleCityChange = (newCity: string) => {
+    setLocation(newCity);
+    localStorage.setItem("soni_user_location", newCity);
+    window.dispatchEvent(new CustomEvent("soni_location_changed", { detail: newCity }));
+    fetchRates(newCity);
+  };
+
+  // Reset Unit Converter values
+  const handleResetConverter = () => {
+    setAmount(10);
+    setUnit("Gram");
+    setSelectedMetal("Gold-24K");
+    setIncludeMaking(false);
+    if (rates?.gold?.["24k"]) {
+      setCustomRate(rates.gold["24k"]);
+    } else {
+      setCustomRate(7450);
+    }
   };
 
   // Sync custom rate when metal selection changes
@@ -130,30 +145,33 @@ export default function LiveRateCalculator() {
     handleMetalChange(selectedMetal);
   };
 
-  // Unit converter calculation logic
-  const selectedUnitObj = UNITS.find((u) => u.id === unit) || UNITS[0];
-  const totalGrams = (amount || 0) * selectedUnitObj.factor;
+  // Selected metal default rate lookup
+  const metalConfig = METALS.find((m) => m.id === selectedMetal) || METALS[0];
+  const unitConfig = UNITS.find((u) => u.id === unit) || UNITS[0];
 
-  const effectiveRatePerGram = customRate + (includeMaking ? MAKING_CHARGE_PER_GRAM : 0);
-  const estimatedValue = totalGrams * effectiveRatePerGram;
+  // Calculate Unit Converter totals
+  const totalGramsInUnit = amount * unitConfig.factor;
+  const rawMetalCost = totalGramsInUnit * customRate;
+  const makingCost = includeMaking ? totalGramsInUnit * MAKING_CHARGE_PER_GRAM : 0;
+  const estimatedValue = rawMetalCost + makingCost;
 
   // Conversions for badges
-  const gramsVal = totalGrams;
-  const tensVal = totalGrams / 10;
-  const kgVal = totalGrams / 1000;
-  const tolaVal = totalGrams / 11.6638038;
-  const ounceVal = totalGrams / 31.1034768;
+  const gramsVal = totalGramsInUnit;
+  const tensVal = totalGramsInUnit / 10;
+  const kgVal = totalGramsInUnit / 1000;
+  const tolaVal = totalGramsInUnit / 11.6638038;
+  const ounceVal = totalGramsInUnit / 31.1034768;
 
-  // Jewellery Calculator calculation logic
-  const goldRatePerGram = rates ? rates.gold[purity] : purity === "18k" ? 5590 : purity === "14k" ? 4350 : purity === "22k" ? 6830 : 7450;
-  const rawGoldCost = metalWeight * goldRatePerGram;
+  // Calculate Jewellery Estimator totals
+  const activeRateForPurity = rates?.gold?.[purity] || (purity === "18k" ? 5590 : purity === "14k" ? 4350 : purity === "22k" ? 6830 : 7450);
+  const rawGoldCost = metalWeight * activeRateForPurity;
   const totalMakingCharge = metalWeight * MAKING_CHARGE_PER_GRAM;
   const subtotal = rawGoldCost + totalMakingCharge;
   const gst = subtotal * 0.03; // 3% GST
   const grandTotal = subtotal + gst;
 
   return (
-    <div className="rounded-2xl border border-gold/40 bg-gradient-to-b from-ink-panel via-black/95 to-ink-panel p-6 md:p-8 shadow-2xl">
+    <div className={`rounded-2xl ${embedded ? "border-0 shadow-none bg-transparent p-2 sm:p-4" : "border border-gold/40 bg-gradient-to-b from-ink-panel via-black/95 to-ink-panel p-6 md:p-8 shadow-2xl"}`}>
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line-soft pb-4 mb-6">
         <div>
@@ -358,7 +376,7 @@ export default function LiveRateCalculator() {
             <div>
               <span className="text-xs text-bone-faint uppercase tracking-wider block">Total Calculation</span>
               <span className="text-sm text-bone font-medium">
-                {amount} {unit} of {METALS.find((m) => m.id === selectedMetal)?.label} @ ₹{effectiveRatePerGram.toLocaleString("en-IN")}/g
+                {amount} {unit} of {METALS.find((m) => m.id === selectedMetal)?.label} @ ₹{customRate.toLocaleString("en-IN")}/g
               </span>
             </div>
             <div className="text-right">
@@ -381,7 +399,7 @@ export default function LiveRateCalculator() {
             {/* Metal Purity */}
             <div>
               <label className="block text-xs uppercase tracking-wider text-bone-faint mb-2">
-                Select Gold Purity (Surat Live Rate: ₹{goldRatePerGram.toLocaleString("en-IN")}/g)
+                Select Gold Purity (Surat Live Rate: ₹{activeRateForPurity.toLocaleString("en-IN")}/g)
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {(["18k", "14k", "22k", "24k"] as const).map((p) => (
@@ -436,7 +454,7 @@ export default function LiveRateCalculator() {
 
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between text-bone-dim">
-                  <span>Gold Cost ({purity.toUpperCase()} · {metalWeight}g @ ₹{goldRatePerGram.toLocaleString("en-IN")}/g):</span>
+                  <span>Gold Cost ({purity.toUpperCase()} · {metalWeight}g @ ₹{activeRateForPurity.toLocaleString("en-IN")}/g):</span>
                   <span className="text-bone font-mono">₹{Math.round(rawGoldCost).toLocaleString("en-IN")}</span>
                 </div>
 

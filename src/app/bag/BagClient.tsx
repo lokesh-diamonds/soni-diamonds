@@ -50,35 +50,35 @@ export default function BagClient() {
                 key={`${item.slug}-${item.variantId}`}
                 delay={i * 70}
               >
-                <div className="flex gap-6 py-8">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 py-6 sm:py-8">
                   <Link
                     href={`/shop/${item.slug}`}
-                    className="relative h-32 w-28 shrink-0 overflow-hidden bg-ink-panel"
+                    className="relative h-40 w-full sm:h-32 sm:w-28 shrink-0 overflow-hidden bg-ink-panel rounded-lg"
                   >
                     <Image
                       src={item.image}
                       alt={item.name}
                       fill
-                      sizes="112px"
+                      sizes="(max-width: 640px) 100vw, 112px"
                       className="object-cover"
                     />
                   </Link>
 
-                  <div className="flex flex-1 flex-col">
+                  <div className="flex flex-1 flex-col justify-between">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="eyebrow">{item.collection}</p>
                         <Link
                           href={`/shop/${item.slug}`}
-                          className="mt-1 block font-serif text-xl text-bone link-underline"
+                          className="mt-1 block font-serif text-lg sm:text-xl text-bone link-underline"
                         >
                           {item.name}
                         </Link>
-                        <p className="mt-1 text-sm text-bone-faint">
+                        <p className="mt-1 text-xs sm:text-sm text-bone-faint">
                           {item.variantLabel}
                         </p>
                       </div>
-                      <p className="font-serif text-lg text-gold-gradient whitespace-nowrap">
+                      <p className="font-serif text-base sm:text-lg text-gold-gradient whitespace-nowrap">
                         {formatPrice(item.unitPrice * item.quantity)}
                       </p>
                     </div>

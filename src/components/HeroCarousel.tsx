@@ -114,7 +114,7 @@ export default function HeroCarousel() {
       <div className="container-luxe relative flex h-full flex-col justify-end pb-24 md:pb-32">
         <div key={index} className="hero-copy max-w-3xl">
           <p className="eyebrow">{active.eyebrow}</p>
-          <h1 className="mt-5 font-serif text-5xl md:text-7xl leading-[1.02] text-bone">
+          <h1 className="mt-4 sm:mt-5 font-serif text-3xl sm:text-5xl md:text-7xl leading-[1.05] sm:leading-[1.02] text-bone">
             {active.titleLead}{" "}
             <span className="text-gold-gradient">{active.titleAccent}</span>
           </h1>

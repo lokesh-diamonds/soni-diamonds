@@ -142,19 +142,20 @@ export default function Chatbot() {
 
       {/* Floating Calculator Modal (when triggered from quick button above chatbot) */}
       {showCalculator && !isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fade-in">
-          <div className="relative max-w-4xl w-full max-h-[90vh] overflow-y-auto rounded-2xl border border-gold/50 bg-ink-panel p-2 shadow-2xl">
-            <div className="flex justify-between items-center p-4 border-b border-line-soft">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-4 backdrop-blur-md -webkit-backdrop-blur-md animate-fade-in">
+          <div className="relative max-w-4xl w-full max-h-[92vh] overflow-y-auto scrollbar-none rounded-2xl border border-gold/50 bg-ink-panel p-2 sm:p-3 shadow-2xl">
+            <div className="flex justify-between items-center px-4 py-3 border-b border-line-soft">
               <span className="font-serif text-lg text-bone">Live Rate &amp; Price Calculator</span>
               <button
                 onClick={() => setShowCalculator(false)}
-                className="text-bone-dim hover:text-bone text-xl"
+                className="text-bone-dim hover:text-bone text-2xl px-2"
+                aria-label="Close Calculator"
               >
                 ✕
               </button>
             </div>
-            <div className="p-2">
-              <LiveRateCalculator />
+            <div className="p-1 sm:p-2">
+              <LiveRateCalculator embedded />
             </div>
           </div>
         </div>

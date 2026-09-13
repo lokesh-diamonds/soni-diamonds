@@ -210,15 +210,15 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       </div>
 
       {/* Mobile sticky CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line-soft bg-ink/95 backdrop-blur p-4 md:hidden">
-        <div className="flex items-center justify-between gap-4">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line-soft bg-ink/95 backdrop-blur-md -webkit-backdrop-blur-md p-3 sm:p-4 md:hidden shadow-2xl">
+        <div className="flex items-center justify-between gap-3 max-w-md mx-auto pr-16 sm:pr-0">
           <div>
-            <p className="text-xs text-bone-faint">{variant?.label}</p>
-            <p className="font-serif text-lg text-gold-gradient">
+            <p className="text-[0.65rem] text-bone-faint truncate max-w-[120px]">{variant?.label}</p>
+            <p className="font-serif text-base sm:text-lg text-gold-gradient font-medium">
               {formatPrice(price)}
             </p>
           </div>
-          <button onClick={handleAdd} className="btn-gold flex-1 max-w-[220px]">
+          <button onClick={handleAdd} className="btn-gold flex-1 py-2.5 text-[0.68rem] font-semibold">
             {added ? "Added ✓" : "Add to Bag"}
           </button>
         </div>

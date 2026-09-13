@@ -75,7 +75,7 @@ export default function LocationPrompt() {
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-6 left-6 z-40 max-w-md w-[calc(100vw-3rem)] rounded-2xl border border-gold/40 bg-ink-panel/95 p-5 shadow-2xl backdrop-blur-xl animate-fade-in">
+    <div className="fixed bottom-4 left-3 right-3 sm:right-auto sm:left-6 sm:bottom-6 z-40 max-w-md w-auto rounded-2xl border border-gold/40 bg-ink-panel/95 p-4 sm:p-5 shadow-2xl backdrop-blur-xl -webkit-backdrop-blur-xl animate-fade-in">
       <div className="flex items-start justify-between gap-3 border-b border-line-soft pb-3">
         <div className="flex items-center gap-2 text-gold">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
