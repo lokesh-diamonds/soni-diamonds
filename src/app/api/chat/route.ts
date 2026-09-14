@@ -153,7 +153,7 @@ CONSULTANT INSTRUCTIONS FOR HANDLING CLIENT QUERIES:
         })),
       ];
 
-      // Try active Gemini models in order
+      // Try active AI models in order
       const modelsToTry = [
         "gemini-2.0-flash",
         "gemini-1.5-flash",
@@ -163,9 +163,9 @@ CONSULTANT INSTRUCTIONS FOR HANDLING CLIENT QUERIES:
 
       for (const modelName of modelsToTry) {
         try {
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+          const aiEndpointUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-          const res = await fetch(geminiUrl, {
+          const res = await fetch(aiEndpointUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ contents }),

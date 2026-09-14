@@ -33,7 +33,7 @@ The scanned **visiting card** (`public/images/visiting-card.jpeg`) is processed 
 
 ## New Major Features
 
-1. **Gemini AI Chatbot**: Floating AI assistant in the bottom-right corner powered by Google Gemini API (`GEMINI_API_KEY`), embedded with Soni Diamonds Knowledge Base.
+1. **AI Chatbot**: Floating AI assistant in the bottom-right corner, embedded with Soni Diamonds Knowledge Base.
 2. **Live Rate Calculator**: Interactive real-time gold (18K, 14K, 22K) & diamond calculator on the Size Guide page and chatbot header with flat ₹850/g making charges.
 3. **Surat Live Rate Puller**: Live ticker in the footer pulling 18K/14K gold and diamond rates specifically for Surat via `/api/rates`.
 4. **Location Detection**: Auto-detects or prompts user location to personalize gold and diamond rates on landing.

@@ -174,7 +174,7 @@ export default function Chatbot() {
                 <h4 className="font-serif text-sm text-bone">Soni Diamonds AI Assistant</h4>
                 <p className="text-[0.65rem] text-gold flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 inline-block" />
-                  Powered by Gemini AI · Surat Hub
+                  Soni Diamonds AI · Surat Hub
                 </p>
               </div>
             </div>
@@ -233,7 +233,7 @@ export default function Chatbot() {
                 <span className="animate-bounce">●</span>
                 <span className="animate-bounce [animation-delay:0.2s]">●</span>
                 <span className="animate-bounce [animation-delay:0.4s]">●</span>
-                <span className="text-bone-faint text-[0.65rem] ml-1">Consulting Gemini AI &amp; Soni Knowledge Base...</span>
+                <span className="text-bone-faint text-[0.65rem] ml-1">Consulting Soni Diamonds Knowledge Base...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
