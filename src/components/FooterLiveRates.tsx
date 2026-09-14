@@ -16,6 +16,8 @@ type RateData = {
   makingChargesPerGram: number;
   currency: string;
   isLiveApi: boolean;
+  stale?: boolean;
+  staleAgeMinutes?: number;
 };
 
 export default function FooterLiveRates() {
@@ -61,6 +63,14 @@ export default function FooterLiveRates() {
           <span className="text-[0.65rem] uppercase tracking-widest text-gold bg-gold/10 border border-gold/30 px-2 py-0.5 rounded-full">
             Katargam &amp; Mahidharpura Market
           </span>
+          {rates?.stale && (
+            <span
+              className="text-[0.65rem] uppercase tracking-widest text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full"
+              title="Live sources are temporarily unreachable — showing the last confirmed rate."
+            >
+              Last update {rates.staleAgeMinutes}m ago
+            </span>
+          )}
         </div>
 
         <div className="text-[0.7rem] text-bone-faint">

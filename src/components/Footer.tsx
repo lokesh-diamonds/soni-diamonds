@@ -95,12 +95,21 @@ export default function Footer() {
 
         <div className="hairline my-12" />
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <p className="text-xs text-bone-faint flex items-center gap-2">
-            <span>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="text-xs text-bone-faint">
+            <p>
               © {new Date().getFullYear()} {site.name} {site.tagline}. Making charges fixed at ₹850/g. All rights reserved.
-            </span>
-          </p>
+            </p>
+            <p className="mt-1 text-[0.7rem] text-bone-faint/70">
+              Developer -{" "}
+              <a
+                href="mailto:abeergandhi2@gmail.com"
+                className="hover:text-bone transition-colors"
+              >
+                Abeer Gandhi · abeergandhi2@gmail.com
+              </a>
+            </p>
+          </div>
           <div className="flex gap-6 text-xs text-bone-faint">
             <Link href="/privacy-policy" className="hover:text-bone transition-colors">
               Privacy Policy
