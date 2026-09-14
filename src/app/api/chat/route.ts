@@ -67,7 +67,6 @@ ATELIER & CONTACT DETAILS:
 - Founder & Managing Director: Lokesh Soni
 - Atelier & Wholesale Address: LB Char Rasta, Mahidharpura, Surat, Gujarat, India
 - Official GSTIN: 27POMPS2282M1ZS
-- Official PAN: AGAFS7226G
 - Direct Phone / WhatsApp: +91 93098 52270
 - Email: lokesh@sonidiamonds.in
 - Website: https://sonidiamonds.in
@@ -227,7 +226,7 @@ You can also use our interactive Live Rate Calculator & Unit Converter on our we
       lastUserMessage.includes("regis")
     ) {
       fallbackReply =
-        "Soni Diamonds Official Business Credentials:\n• GSTIN: 27POMPS2282M1ZS\n• PAN: AGAFS7226G\n• Address: LB Char Rasta, Mahidharpura, Surat, Gujarat, India\n• Managing Director: Lokesh Soni (lokesh@sonidiamonds.in / +91 93098 52270)";
+        "Soni Diamonds Official Business Credentials:\n• GSTIN: 27POMPS2282M1ZS\n• Address: LB Char Rasta, Mahidharpura, Surat, Gujarat, India\n• Managing Director: Lokesh Soni (lokesh@sonidiamonds.in / +91 93098 52270)";
     } else if (
       lastUserMessage.includes("shipping") ||
       lastUserMessage.includes("delivery") ||

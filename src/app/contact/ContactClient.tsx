@@ -278,7 +278,6 @@ export default function ContactClient() {
               <p className="eyebrow text-gold font-serif text-[0.65rem]">Official Business Credentials</p>
               <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-line-soft">
                 <span>GSTIN: <strong className="text-bone font-semibold select-all">27POMPS2282M1ZS</strong></span>
-                <span>PAN: <strong className="text-bone font-semibold select-all">AGAFS7226G</strong></span>
               </div>
             </div>
 

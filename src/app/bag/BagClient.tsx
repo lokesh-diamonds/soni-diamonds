@@ -155,7 +155,7 @@ export default function BagClient() {
               </dl>
 
               <Link href="/checkout" className="btn-gold mt-8 w-full">
-                Proceed to Checkout
+                Continue to Checkout
               </Link>
               <Link
                 href="/shop"

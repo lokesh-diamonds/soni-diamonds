@@ -11,7 +11,6 @@ export const site = {
   mapsUrl: "https://www.google.com/maps/search/?api=1&query=LB+Char+Rasta+Mahidharpura+Surat",
   address: "LB Char Rasta, Mahidharpura, Surat, Gujarat, India",
   instagram: "https://instagram.com/sonidiamonds",
-  pan: "AGAFS7226G",
   gstin: "27POMPS2282M1ZS",
 };
 
