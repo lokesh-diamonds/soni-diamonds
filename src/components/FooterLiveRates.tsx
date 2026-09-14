@@ -11,17 +11,17 @@ type RateData = {
     "18k": number;
     "14k": number;
   };
-  diamond: {
-    naturalPerCarat: number;
-    labPerCarat: number;
-  };
+  silver: { "999": number };
+  platinum: { "950": number };
   makingChargesPerGram: number;
   currency: string;
+  isLiveApi: boolean;
 };
 
 export default function FooterLiveRates() {
   const [rates, setRates] = useState<RateData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errored, setErrored] = useState(false);
 
   useEffect(() => {
     async function fetchRates() {
@@ -30,9 +30,13 @@ export default function FooterLiveRates() {
         if (res.ok) {
           const data = await res.json();
           setRates(data);
+          setErrored(false);
+        } else {
+          setErrored(true);
         }
       } catch (err) {
         console.error("Failed to load Surat live rates", err);
+        setErrored(true);
       } finally {
         setLoading(false);
       }
@@ -69,38 +73,54 @@ export default function FooterLiveRates() {
           Fetching live Surat gold rates...
         </div>
       ) : rates ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
           <div className="bg-ink/60 border border-gold/20 rounded-lg p-2.5">
-            <p className="text-[0.65rem] uppercase tracking-wider text-bone-faint">24K Gold Rate (Surat)</p>
+            <p className="text-[0.65rem] uppercase tracking-wider text-bone-faint">24K Gold</p>
             <p className="font-serif text-base md:text-lg text-gold font-medium mt-0.5">
               ₹{rates.gold["24k"].toLocaleString("en-IN")} <span className="text-[0.65rem] font-sans text-bone-dim">/ g</span>
             </p>
           </div>
 
           <div className="bg-ink/60 border border-gold/20 rounded-lg p-2.5">
-            <p className="text-[0.65rem] uppercase tracking-wider text-bone-faint">22K Gold Rate (Surat)</p>
+            <p className="text-[0.65rem] uppercase tracking-wider text-bone-faint">22K Gold</p>
             <p className="font-serif text-base md:text-lg text-gold font-medium mt-0.5">
               ₹{rates.gold["22k"].toLocaleString("en-IN")} <span className="text-[0.65rem] font-sans text-bone-dim">/ g</span>
             </p>
           </div>
 
           <div className="bg-ink/60 border border-gold/20 rounded-lg p-2.5">
-            <p className="text-[0.65rem] uppercase tracking-wider text-bone-faint">18K Gold Rate (Surat)</p>
+            <p className="text-[0.65rem] uppercase tracking-wider text-bone-faint">18K Gold</p>
             <p className="font-serif text-base md:text-lg text-gold font-medium mt-0.5">
               ₹{rates.gold["18k"].toLocaleString("en-IN")} <span className="text-[0.65rem] font-sans text-bone-dim">/ g</span>
             </p>
           </div>
 
           <div className="bg-ink/60 border border-gold/20 rounded-lg p-2.5">
-            <p className="text-[0.65rem] uppercase tracking-wider text-bone-faint">14K Gold Rate (Surat)</p>
+            <p className="text-[0.65rem] uppercase tracking-wider text-bone-faint">14K Gold</p>
             <p className="font-serif text-base md:text-lg text-gold font-medium mt-0.5">
               ₹{rates.gold["14k"].toLocaleString("en-IN")} <span className="text-[0.65rem] font-sans text-bone-dim">/ g</span>
+            </p>
+          </div>
+
+          <div className="bg-ink/60 border border-gold/20 rounded-lg p-2.5">
+            <p className="text-[0.65rem] uppercase tracking-wider text-bone-faint">Silver 999</p>
+            <p className="font-serif text-base md:text-lg text-gold font-medium mt-0.5">
+              ₹{rates.silver["999"].toLocaleString("en-IN")} <span className="text-[0.65rem] font-sans text-bone-dim">/ g</span>
+            </p>
+          </div>
+
+          <div className="bg-ink/60 border border-gold/20 rounded-lg p-2.5">
+            <p className="text-[0.65rem] uppercase tracking-wider text-bone-faint">Platinum 950</p>
+            <p className="font-serif text-base md:text-lg text-gold font-medium mt-0.5">
+              ₹{rates.platinum["950"].toLocaleString("en-IN")} <span className="text-[0.65rem] font-sans text-bone-dim">/ g</span>
             </p>
           </div>
         </div>
       ) : (
         <div className="text-xs text-rose-300 text-center py-2">
-          Unable to pull live market rates. Please check connection.
+          {errored
+            ? "Live rate sources are temporarily unavailable. Please refresh shortly."
+            : "Unable to pull live market rates. Please check connection."}
         </div>
       )}
     </div>

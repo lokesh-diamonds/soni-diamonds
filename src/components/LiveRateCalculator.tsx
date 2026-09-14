@@ -10,7 +10,10 @@ type RateData = {
     "18k": number;
     "14k": number;
   };
+  silver: { "999": number };
+  platinum: { "950": number };
   makingChargesPerGram: number;
+  isLiveApi: boolean;
 };
 
 // Unit conversion factors relative to 1 Gram
@@ -24,18 +27,50 @@ const UNITS = [
 ];
 
 const METALS = [
-  { id: "Gold-24K", label: "Gold (24K Pure)", defaultRate: 7450 },
-  { id: "Gold-22K", label: "Gold (22K Standard)", defaultRate: 6830 },
-  { id: "Gold-18K", label: "Gold (18K Hallmark)", defaultRate: 5590 },
-  { id: "Gold-14K", label: "Gold (14K Custom)", defaultRate: 4350 },
-  { id: "Silver", label: "Silver (999 Fine)", defaultRate: 88 },
-  { id: "Platinum", label: "Platinum (950 Fine)", defaultRate: 3400 },
+  { id: "Gold-24K", label: "Gold (24K Pure)" },
+  { id: "Gold-22K", label: "Gold (22K Standard)" },
+  { id: "Gold-18K", label: "Gold (18K Hallmark)" },
+  { id: "Gold-14K", label: "Gold (14K Custom)" },
+  { id: "Silver", label: "Silver (999 Fine)" },
+  { id: "Platinum", label: "Platinum (950 Fine)" },
 ];
 
+// Live rate lookup per metal id, given the API response. Returns null if the
+// rate isn't loaded yet — callers must handle that rather than falling back
+// to an invented number.
+function liveRateFor(rates: RateData | null, metalId: string): number | null {
+  if (!rates) return null;
+  switch (metalId) {
+    case "Gold-24K":
+      return rates.gold["24k"];
+    case "Gold-22K":
+      return rates.gold["22k"];
+    case "Gold-18K":
+      return rates.gold["18k"];
+    case "Gold-14K":
+      return rates.gold["14k"];
+    case "Silver":
+      return rates.silver["999"];
+    case "Platinum":
+      return rates.platinum["950"];
+    default:
+      return null;
+  }
+}
+
 export default function LiveRateCalculator({ embedded = false }: { embedded?: boolean }) {
-  const [location, setLocation] = useState("Surat");
   const [rates, setRates] = useState<RateData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  // The bullion spot price is one real market — there is no genuine per-city
+  // premium data available without a paid Indian bullion-association feed.
+  // "Location" here is therefore a detected DISPLAY LABEL only: we show the
+  // user's real city (via browser geolocation + reverse geocoding, exactly
+  // as LocationPrompt already does), but the rate itself is the same live
+  // spot rate everywhere. Nothing here is a fabricated city multiplier.
+  const [location, setLocation] = useState("Surat");
+  const [detecting, setDetecting] = useState(false);
 
   // Tab State: "converter" (matches user screenshot) or "jewellery"
   const [activeTab, setActiveTab] = useState<"converter" | "jewellery">("converter");
@@ -46,7 +81,9 @@ export default function LiveRateCalculator({ embedded = false }: { embedded?: bo
   const [amount, setAmount] = useState<number>(10);
   const [unit, setUnit] = useState<string>("Gram");
   const [selectedMetal, setSelectedMetal] = useState<string>("Gold-24K");
-  const [customRate, setCustomRate] = useState<number>(7450); // editable rate per gram
+  // Editable rate per gram — seeded from the live rate once it loads, but
+  // the user is free to override it (e.g. to their own dealer's quote).
+  const [customRate, setCustomRate] = useState<number | null>(null);
   const [includeMaking, setIncludeMaking] = useState<boolean>(false);
 
   // -------------------------------------------------------------
@@ -57,59 +94,86 @@ export default function LiveRateCalculator({ embedded = false }: { embedded?: bo
 
   const MAKING_CHARGE_PER_GRAM = 850; // INR per gram fixed rate
 
-  const CITIES = [
-    "Surat",
-    "Mumbai",
-    "Delhi",
-    "Ahmedabad",
-    "Bangalore",
-    "Nagpur",
-    "Kolkata",
-    "International",
-  ];
-
   const fetchRates = async (city: string) => {
     setLoading(true);
     try {
       const res = await fetch(`/api/rates?city=${encodeURIComponent(city)}`);
       if (res.ok) {
-        const data = await res.json();
+        const data: RateData = await res.json();
         setRates(data);
-        // Set initial custom rate from live 24K gold rate for selected city
-        if (data.gold?.["24k"]) {
-          setCustomRate(data.gold["24k"]);
-        }
+        setLoadError(false);
+        setCustomRate((prev) => prev ?? data.gold["24k"]);
+      } else {
+        setLoadError(true);
       }
     } catch (err) {
       console.error("Failed to fetch live rates for calculator", err);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const savedLoc = localStorage.getItem("soni_user_location") || "Surat";
-    setLocation(savedLoc);
-    fetchRates(savedLoc);
+    const saved = localStorage.getItem("soni_user_location") || "Surat";
+    setLocation(saved);
+    fetchRates(saved);
 
-    const handleLocChange = (e: CustomEvent) => {
-      if (e.detail) {
-        setLocation(e.detail);
-        fetchRates(e.detail);
+    const interval = setInterval(() => fetchRates(saved), 5 * 60 * 1000);
+
+    // Stay in sync if LocationPrompt (or this component's own detector)
+    // changes the saved location elsewhere on the page.
+    const handleLocChange = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail;
+      if (detail) {
+        setLocation(detail);
+        fetchRates(detail);
       }
     };
+    window.addEventListener("soni_location_changed", handleLocChange);
 
-    window.addEventListener("soni_location_changed", handleLocChange as EventListener);
     return () => {
-      window.removeEventListener("soni_location_changed", handleLocChange as EventListener);
+      clearInterval(interval);
+      window.removeEventListener("soni_location_changed", handleLocChange);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCityChange = (newCity: string) => {
-    setLocation(newCity);
-    localStorage.setItem("soni_user_location", newCity);
-    window.dispatchEvent(new CustomEvent("soni_location_changed", { detail: newCity }));
-    fetchRates(newCity);
+  // Real browser geolocation → real reverse geocoding (OpenStreetMap
+  // Nominatim, free, no key) — the same approach LocationPrompt uses. No
+  // fallback list of fake cities; if detection fails we simply keep Surat.
+  const handleDetectLocation = () => {
+    if (!("geolocation" in navigator)) return;
+    setDetecting(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const city: string =
+              data.address?.city ||
+              data.address?.town ||
+              data.address?.state ||
+              "Surat";
+            localStorage.setItem("soni_user_location", city);
+            window.dispatchEvent(
+              new CustomEvent("soni_location_changed", { detail: city })
+            );
+            setLocation(city);
+            fetchRates(city);
+          }
+        } catch (err) {
+          console.error("Reverse geocoding failed", err);
+        } finally {
+          setDetecting(false);
+        }
+      },
+      () => setDetecting(false)
+    );
   };
 
   // Reset Unit Converter values
@@ -118,40 +182,26 @@ export default function LiveRateCalculator({ embedded = false }: { embedded?: bo
     setUnit("Gram");
     setSelectedMetal("Gold-24K");
     setIncludeMaking(false);
-    if (rates?.gold?.["24k"]) {
-      setCustomRate(rates.gold["24k"]);
-    } else {
-      setCustomRate(7450);
-    }
+    setCustomRate(rates?.gold["24k"] ?? null);
   };
 
-  // Sync custom rate when metal selection changes
+  // Sync custom rate when metal selection changes, from the live rate.
   const handleMetalChange = (metalId: string) => {
     setSelectedMetal(metalId);
-    if (rates && rates.gold) {
-      if (metalId === "Gold-24K") setCustomRate(rates.gold["24k"]);
-      else if (metalId === "Gold-22K") setCustomRate(rates.gold["22k"]);
-      else if (metalId === "Gold-18K") setCustomRate(rates.gold["18k"]);
-      else if (metalId === "Gold-14K") setCustomRate(rates.gold["14k"]);
-      else if (metalId === "Silver") setCustomRate(88);
-      else if (metalId === "Platinum") setCustomRate(3400);
-    } else {
-      const metalObj = METALS.find((m) => m.id === metalId);
-      if (metalObj) setCustomRate(metalObj.defaultRate);
-    }
+    const live = liveRateFor(rates, metalId);
+    if (live !== null) setCustomRate(live);
   };
 
   const handleResetRate = () => {
     handleMetalChange(selectedMetal);
   };
 
-  // Selected metal default rate lookup
-  const metalConfig = METALS.find((m) => m.id === selectedMetal) || METALS[0];
   const unitConfig = UNITS.find((u) => u.id === unit) || UNITS[0];
+  const effectiveRate = customRate ?? 0;
 
   // Calculate Unit Converter totals
   const totalGramsInUnit = amount * unitConfig.factor;
-  const rawMetalCost = totalGramsInUnit * customRate;
+  const rawMetalCost = totalGramsInUnit * effectiveRate;
   const makingCost = includeMaking ? totalGramsInUnit * MAKING_CHARGE_PER_GRAM : 0;
   const estimatedValue = rawMetalCost + makingCost;
 
@@ -162,9 +212,10 @@ export default function LiveRateCalculator({ embedded = false }: { embedded?: bo
   const tolaVal = totalGramsInUnit / 11.6638038;
   const ounceVal = totalGramsInUnit / 31.1034768;
 
-  // Calculate Jewellery Estimator totals
-  const activeRateForPurity = rates?.gold?.[purity] || (purity === "18k" ? 5590 : purity === "14k" ? 4350 : purity === "22k" ? 6830 : 7450);
-  const rawGoldCost = metalWeight * activeRateForPurity;
+  // Calculate Jewellery Estimator totals — only meaningful once live rates
+  // have loaded; renders a loading state otherwise rather than a guess.
+  const activeRateForPurity = rates?.gold?.[purity] ?? null;
+  const rawGoldCost = activeRateForPurity !== null ? metalWeight * activeRateForPurity : 0;
   const totalMakingCharge = metalWeight * MAKING_CHARGE_PER_GRAM;
   const subtotal = rawGoldCost + totalMakingCharge;
   const gst = subtotal * 0.03; // 3% GST
@@ -180,29 +231,39 @@ export default function LiveRateCalculator({ embedded = false }: { embedded?: bo
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-gold" />
             </span>
-            Live User Location Pricing Hub
+            Live Bullion Rates
           </div>
           <h3 className="mt-2 font-serif text-2xl md:text-3xl text-bone">
-            Live Gold &amp; Silver Rate Calculator
+            Live Gold, Silver &amp; Platinum Rate Calculator
           </h3>
 
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-bone-dim">
-            <span>📍 Calculating for location:</span>
-            <select
-              value={location}
-              onChange={(e) => handleCityChange(e.target.value)}
-              className="bg-black/80 border border-gold/40 text-gold text-xs px-2.5 py-1 rounded-lg focus:outline-none focus:border-gold font-medium"
+            <span className="text-gold font-medium">📍 {location}</span>
+            <button
+              type="button"
+              onClick={handleDetectLocation}
+              disabled={detecting}
+              className="text-[0.65rem] px-2 py-0.5 rounded-full border border-gold/30 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-50"
             >
-              {CITIES.map((c) => (
-                <option key={c} value={c} className="bg-ink-panel text-bone py-1">
-                  {c} {c === "Surat" ? "(Wholesale Hub)" : "Market"}
-                </option>
-              ))}
-            </select>
-            <span className="text-bone-faint text-[0.7rem]">
-              · Soni Atelier: LB Char Rasta, Mahidharpura, Surat
-            </span>
+              {detecting ? "Detecting…" : "Use my location"}
+            </button>
+            {!loading && (
+              <span
+                className={`text-[0.65rem] px-2 py-0.5 rounded-full border ${
+                  loadError
+                    ? "text-rose-300 border-rose-500/30 bg-rose-500/10"
+                    : "text-emerald-400 border-emerald-500/30 bg-emerald-500/10"
+                }`}
+              >
+                {loadError ? "Rates unavailable" : "Live"}
+              </span>
+            )}
           </div>
+          <p className="mt-1 text-[0.65rem] text-bone-faint leading-relaxed max-w-md">
+            Gold, silver and platinum trade on one live international spot
+            market, so the rate shown is the same real-time price wherever
+            you are — we simply label it with your detected city.
+          </p>
         </div>
 
         {/* Tab Switcher */}
@@ -305,7 +366,8 @@ export default function LiveRateCalculator({ embedded = false }: { embedded?: bo
               <input
                 type="number"
                 min="0"
-                value={customRate}
+                value={customRate ?? ""}
+                placeholder={loading ? "Loading…" : "0"}
                 onChange={(e) => setCustomRate(parseFloat(e.target.value) || 0)}
                 className="w-full bg-black/60 border border-gold/40 rounded-xl px-4 py-2.5 text-sm text-gold font-mono font-semibold focus:outline-none focus:border-gold"
               />
@@ -376,7 +438,7 @@ export default function LiveRateCalculator({ embedded = false }: { embedded?: bo
             <div>
               <span className="text-xs text-bone-faint uppercase tracking-wider block">Total Calculation</span>
               <span className="text-sm text-bone font-medium">
-                {amount} {unit} of {METALS.find((m) => m.id === selectedMetal)?.label} @ ₹{customRate.toLocaleString("en-IN")}/g
+                {amount} {unit} of {METALS.find((m) => m.id === selectedMetal)?.label} @ ₹{effectiveRate.toLocaleString("en-IN")}/g
               </span>
             </div>
             <div className="text-right">
@@ -399,7 +461,7 @@ export default function LiveRateCalculator({ embedded = false }: { embedded?: bo
             {/* Metal Purity */}
             <div>
               <label className="block text-xs uppercase tracking-wider text-bone-faint mb-2">
-                Select Gold Purity (Surat Live Rate: ₹{activeRateForPurity.toLocaleString("en-IN")}/g)
+                Select Gold Purity (Live Rate: {activeRateForPurity !== null ? `₹${activeRateForPurity.toLocaleString("en-IN")}/g` : "loading…"})
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {(["18k", "14k", "22k", "24k"] as const).map((p) => (
@@ -448,13 +510,13 @@ export default function LiveRateCalculator({ embedded = false }: { embedded?: bo
               <div className="flex items-center justify-between border-b border-line-soft pb-3 mb-4">
                 <span className="font-serif text-lg text-bone">Jewellery Price Breakdown</span>
                 <span className="text-[0.65rem] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                  Surat Live Rates
+                  {location} · Live Rates
                 </span>
               </div>
 
               <div className="space-y-3 text-xs">
                 <div className="flex justify-between text-bone-dim">
-                  <span>Gold Cost ({purity.toUpperCase()} · {metalWeight}g @ ₹{activeRateForPurity.toLocaleString("en-IN")}/g):</span>
+                  <span>Gold Cost ({purity.toUpperCase()} · {metalWeight}g @ {activeRateForPurity !== null ? `₹${activeRateForPurity.toLocaleString("en-IN")}/g` : "loading…"}):</span>
                   <span className="text-bone font-mono">₹{Math.round(rawGoldCost).toLocaleString("en-IN")}</span>
                 </div>
 
@@ -476,7 +538,7 @@ export default function LiveRateCalculator({ embedded = false }: { embedded?: bo
                 ₹{Math.round(grandTotal).toLocaleString("en-IN")}
               </div>
               <p className="text-[0.65rem] text-bone-faint mt-2 leading-relaxed">
-                *Gold rates updated dynamically for LB Char Rasta, Mahidharpura, Surat.
+                *Live international spot gold rate, refreshed every few minutes. Soni Diamonds atelier: LB Char Rasta, Mahidharpura, Surat.
               </p>
 
               <a

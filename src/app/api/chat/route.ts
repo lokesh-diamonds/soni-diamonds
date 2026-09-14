@@ -11,33 +11,61 @@ export async function POST(request: Request) {
       );
     }
 
-    const city = userLocation || "Surat";
+    const lastUserMessage: string =
+      messages[messages.length - 1]?.content?.toLowerCase() || "";
 
-    // City location rate adjustment multipliers relative to Surat Wholesale hub
-    const cityMultipliers: Record<string, number> = {
-      Surat: 1.0,
-      Mumbai: 1.008,
-      Delhi: 1.012,
-      Ahmedabad: 1.003,
-      Bangalore: 1.015,
-      Nagpur: 1.005,
-      Kolkata: 1.011,
-      International: 1.02,
-    };
+    // Bullion trades on one real international spot market — there is no
+    // genuine per-city Indian retail premium available without a paid
+    // bullion-association data feed, so we never fabricate one. "Location"
+    // is purely a DISPLAY LABEL: if the user names a city in their message
+    // ("gold rate in Mumbai"), or has a detected location saved from the
+    // site, we quote them the exact same live spot rate, labelled with that
+    // city — never a different number.
+    const KNOWN_CITIES = [
+      "surat", "mumbai", "delhi", "new delhi", "ahmedabad", "bangalore",
+      "bengaluru", "kolkata", "chennai", "hyderabad", "pune", "jaipur",
+      "lucknow", "nagpur", "indore", "kochi", "chandigarh", "coimbatore",
+      "london", "dubai", "new york", "singapore", "tokyo",
+    ];
+    const namedCity = KNOWN_CITIES.find((c) => lastUserMessage.includes(c));
+    const city: string = namedCity
+      ? namedCity.replace(/\b\w/g, (ch) => ch.toUpperCase())
+      : userLocation || "Surat";
 
-    const multiplier = cityMultipliers[city] || 1.0;
-    const base24KPerGram = 7450;
-
-    const liveRates = {
+    let liveRates = {
       city,
-      gold24k: Math.round(base24KPerGram * multiplier),
-      gold22k: Math.round(base24KPerGram * multiplier * (22 / 24)),
-      gold18k: Math.round(base24KPerGram * multiplier * (18 / 24)),
-      gold14k: Math.round(base24KPerGram * multiplier * (14 / 24)),
-      silver999: Math.round(88 * multiplier),
-      platinum950: Math.round(3400 * multiplier),
+      gold24k: 0,
+      gold22k: 0,
+      gold18k: 0,
+      gold14k: 0,
+      silver999: 0,
+      platinum950: 0,
       makingChargesPerGram: 850,
+      ratesAvailable: false,
     };
+
+    try {
+      const ratesRes = await fetch(
+        `${new URL(request.url).origin}/api/rates?city=${encodeURIComponent(city)}`,
+        { cache: "no-store" }
+      );
+      if (ratesRes.ok) {
+        const r = await ratesRes.json();
+        liveRates = {
+          city,
+          gold24k: r.gold["24k"],
+          gold22k: r.gold["22k"],
+          gold18k: r.gold["18k"],
+          gold14k: r.gold["14k"],
+          silver999: r.silver["999"],
+          platinum950: r.platinum["950"],
+          makingChargesPerGram: r.makingChargesPerGram,
+          ratesAvailable: true,
+        };
+      }
+    } catch (e) {
+      console.warn("Chat route could not fetch live rates from /api/rates:", e);
+    }
 
     const MASTER_KNOWLEDGE_BASE_SYSTEM_PROMPT = `
 You are the official Senior AI Diamond Specialist & Consultant for SONI DIAMONDS, an elite diamond jewellery manufacturer, wholesaler & retailer headquartered at LB Char Rasta, Mahidharpura, Surat, Gujarat, India.
@@ -47,7 +75,9 @@ YOUR MANDATE & PERSONA:
 - Speak with authority, transparency, and elegance.
 - STRICT GROUNDING DIRECTIVE: You MUST ONLY answer using facts, figures, product specifications, rates, and policies from the SONI DIAMONDS website & atelier records below. Do NOT fabricate outside details, generic advice, or non-website information. If asked about unrelated topics (e.g. weather, sports, generic non-jewellery items), politely bring the user back to Soni Diamonds' offerings.
 
-REAL-TIME LIVE BULLION & METAL RATES (${liveRates.city.toUpperCase()} MARKET):
+${
+  liveRates.ratesAvailable
+    ? `REAL-TIME LIVE BULLION & METAL RATES (${liveRates.city.toUpperCase()} MARKET):
 - 24K Pure Gold: ₹${liveRates.gold24k.toLocaleString("en-IN")} / gram
 - 22K Gold: ₹${liveRates.gold22k.toLocaleString("en-IN")} / gram
 - 18K Hallmark Gold: ₹${liveRates.gold18k.toLocaleString("en-IN")} / gram
@@ -56,12 +86,19 @@ REAL-TIME LIVE BULLION & METAL RATES (${liveRates.city.toUpperCase()} MARKET):
 - 950 Platinum: ₹${liveRates.platinum950.toLocaleString("en-IN")} / gram
 - FIXED FLAT MAKING CHARGES: Exactly ₹850 INR per gram on all 18K & 14K gold diamond jewellery!
 - GST: 3% standard tax applied to net metal + making charges + diamond value.
-- Active Selected Location: ${liveRates.city}. (User can select their city location using our Live Location tool or Rate Calculator).
+- Location: ${liveRates.city}.
+- IMPORTANT: Gold, silver and platinum trade on ONE real international spot market. There is no genuine city-to-city price difference in India for bullion — the rate above IS the correct rate for ${liveRates.city} or any other city the user names. If the user asks for a rate "in <some other city>", give them these exact same numbers labelled with that city's name. NEVER invent a different number for a different city — that would be fabricated data.`
+    : `LIVE BULLION RATES ARE TEMPORARILY UNAVAILABLE. If asked for today's gold/silver/platinum rate, for any city, tell the user live rates could not be fetched right now and to check the Live Rate Calculator on the Size Guide page or call +91 93098 52270. Do NOT invent or guess a rate for any city.`
+}
 
 JEWELLERY COST CALCULATION FORMULA AT SONI DIAMONDS:
 When asked how price or rate is calculated for a piece:
 Total Price = (Gold Weight in grams × Metal Rate for Karat) + (Metal Weight in grams × ₹850 Making Charge) + (Diamond Stone Value based on GIA/IGI carat & clarity) + 3% GST.
-Example for 5g 18K Gold ring: (5g × ₹${liveRates.gold18k.toLocaleString("en-IN")}) + (5g × ₹850) + Diamond Price + 3% GST.
+${
+  liveRates.ratesAvailable
+    ? `Example for 5g 18K Gold ring: (5g × ₹${liveRates.gold18k.toLocaleString("en-IN")}) + (5g × ₹850) + Diamond Price + 3% GST.`
+    : ""
+}
 
 ATELIER & CONTACT DETAILS:
 - Founder & Managing Director: Lokesh Soni
@@ -149,8 +186,6 @@ CONSULTANT INSTRUCTIONS FOR HANDLING CLIENT QUERIES:
     }
 
     // Comprehensive Grounded Fallback Logic if API key is pending configuration
-    const lastUserMessage = messages[messages.length - 1]?.content?.toLowerCase() || "";
-
     let fallbackReply =
       "Namaste! I am Soni Diamonds' Senior Diamond Consultant. We manufacture fine certified & non-certified diamond jewellery at LB Char Rasta, Mahidharpura, Surat. Making charges are flat ₹850/gram across all pieces. You can reach Lokesh Soni at +91 93098 52270 or lokesh@sonidiamonds.in.";
 
@@ -167,7 +202,8 @@ CONSULTANT INSTRUCTIONS FOR HANDLING CLIENT QUERIES:
       lastUserMessage.includes("14k") ||
       lastUserMessage.includes("calculate")
     ) {
-      fallbackReply = `Today's live bullion rates for ${liveRates.city} market:
+      fallbackReply = liveRates.ratesAvailable
+        ? `Today's live bullion rates for ${liveRates.city} market:
 - 24K Pure Gold: ₹${liveRates.gold24k.toLocaleString("en-IN")} / gram
 - 22K Gold: ₹${liveRates.gold22k.toLocaleString("en-IN")} / gram
 - 18K Hallmark Gold: ₹${liveRates.gold18k.toLocaleString("en-IN")} / gram
@@ -178,7 +214,8 @@ CONSULTANT INSTRUCTIONS FOR HANDLING CLIENT QUERIES:
 ✨ Making Charges: Fixed flat ₹850 / gram on all gold diamond jewellery!
 Formula: Total = (Metal Weight × Metal Rate) + (Metal Weight × ₹850) + Diamond Price + 3% GST.
 
-You can also use our interactive Live Rate Calculator & Unit Converter on our website!`;
+You can also use our interactive Live Rate Calculator & Unit Converter on our website!`
+        : `Live bullion rates could not be fetched right now — please try our Live Rate Calculator on the Size Guide page, or call +91 93098 52270 and Lokesh Soni will quote you today's rate directly.`;
     } else if (
       lastUserMessage.includes("making charge") ||
       lastUserMessage.includes("making") ||

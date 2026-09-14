@@ -1,70 +1,154 @@
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const city = searchParams.get("city") || "Surat";
+/**
+ * Live bullion rates for gold, silver and platinum — Surat by default.
+ *
+ * Every number here comes from a real, currently-live source. Nothing is
+ * hardcoded or fabricated:
+ *
+ *   - Spot price per troy ounce (USD): https://api.gold-api.com
+ *     Free, no API key, no quota. Backed by live market data. Symbols used:
+ *     XAU (gold), XAG (silver), XPT (platinum).
+ *   - USD → INR exchange rate: https://open.er-api.com (primary),
+ *     falling back to https://api.frankfurter.dev (ECB rates) if that's down.
+ *     Both are free and require no API key.
+ *
+ * From there:
+ *   - troy ounce → gram is a fixed physical constant (1 oz t = 31.1034768 g).
+ *   - 24k/22k/18k/14k purity fractions are definitions (18k IS 18/24 parts
+ *     pure gold by law/assay standard), not a market "multiplier" — these
+ *     are not guesses, they're what those karat labels mean.
+ *
+ * There is no per-city price adjustment: bullion (gold/silver/platinum) is a
+ * single national/international spot market — the *making charge* is what
+ * varies by jeweller, and Soni Diamonds' is a flat ₹850/g everywhere. A
+ * fabricated "Mumbai is 0.8% pricier than Surat" multiplier was removed —
+ * that was never real data.
+ */
 
-  // Base gold price per gram in INR for 24K (Surat Market baseline)
-  let base24KPerGram = 7450;
-  let isLiveApi = false;
+export const revalidate = 300; // cache each response for 5 minutes
 
-  const apiKey = process.env.GOLD_RATE_API_KEY;
+const TROY_OUNCE_IN_GRAMS = 31.1034768;
+const MAKING_CHARGE_PER_GRAM = 850;
 
-  if (apiKey) {
-    try {
-      // Optional integration with GoldAPI.io or Metals API
-      const res = await fetch("https://www.goldapi.io/api/XAU/INR", {
-        headers: {
-          "x-access-token": apiKey,
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 300 }, // Cache for 5 mins
-      });
+type MetalPriceResponse = {
+  price?: number;
+  updatedAt?: string;
+};
 
-      if (res.ok) {
-        const data = await res.json();
-        if (data.price_gram_24k) {
-          base24KPerGram = Math.round(data.price_gram_24k);
-          isLiveApi = true;
-        }
+type FxResponse = {
+  result?: string;
+  rates?: { INR?: number };
+};
+
+type FrankfurterResponse = {
+  rates?: { INR?: number };
+};
+
+async function fetchMetalSpotUsdPerOunce(symbol: "XAU" | "XAG" | "XPT") {
+  const res = await fetch(`https://api.gold-api.com/price/${symbol}`, {
+    next: { revalidate: 300 },
+  });
+  if (!res.ok) {
+    throw new Error(`gold-api.com returned ${res.status} for ${symbol}`);
+  }
+  const data: MetalPriceResponse = await res.json();
+  if (typeof data.price !== "number") {
+    throw new Error(`gold-api.com response for ${symbol} had no price`);
+  }
+  return data.price;
+}
+
+async function fetchUsdToInr(): Promise<number> {
+  // Primary: open.er-api.com — free, no key, updates daily.
+  try {
+    const res = await fetch("https://open.er-api.com/v6/latest/USD", {
+      next: { revalidate: 300 },
+    });
+    if (res.ok) {
+      const data: FxResponse = await res.json();
+      if (data.result === "success" && typeof data.rates?.INR === "number") {
+        return data.rates.INR;
       }
-    } catch (e) {
-      console.warn("Failed to fetch live gold rates from external API, falling back to Surat market benchmark:", e);
     }
+  } catch {
+    // fall through to backup source
   }
 
-  // City location rate adjustment multipliers (relative to Surat Wholesale hub)
-  const cityMultipliers: Record<string, number> = {
-    Surat: 1.0,
-    Mumbai: 1.008,
-    Delhi: 1.012,
-    Ahmedabad: 1.003,
-    Bangalore: 1.015,
-    Nagpur: 1.005,
-    Kolkata: 1.011,
-    International: 1.02,
-  };
+  // Fallback: Frankfurter (ECB rates) — also free, no key.
+  const res = await fetch(
+    "https://api.frankfurter.dev/v1/latest?from=USD&to=INR",
+    { next: { revalidate: 300 } }
+  );
+  if (!res.ok) {
+    throw new Error(`Frankfurter FX fallback returned ${res.status}`);
+  }
+  const data: FrankfurterResponse = await res.json();
+  if (typeof data.rates?.INR !== "number") {
+    throw new Error("Frankfurter FX fallback response had no INR rate");
+  }
+  return data.rates.INR;
+}
 
-  const multiplier = cityMultipliers[city] || 1.0;
-  const adjusted24k = Math.round(base24KPerGram * multiplier);
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  // City param is accepted for forward-compatibility with per-location
+  // display (e.g. showing "for Mumbai" in the UI), but bullion price itself
+  // does not vary by Indian city — it's one spot market. Only Surat is
+  // supported as a display label today.
+  const city = searchParams.get("city") || "Surat";
 
-  // Calculate purity rates for selected location
-  const gold18k = Math.round(adjusted24k * (18 / 24));
-  const gold14k = Math.round(adjusted24k * (14 / 24));
-  const gold22k = Math.round(adjusted24k * (22 / 24));
+  try {
+    const [goldUsdOz, silverUsdOz, platinumUsdOz, usdToInr] =
+      await Promise.all([
+        fetchMetalSpotUsdPerOunce("XAU"),
+        fetchMetalSpotUsdPerOunce("XAG"),
+        fetchMetalSpotUsdPerOunce("XPT"),
+        fetchUsdToInr(),
+      ]);
 
-  return NextResponse.json({
-    city,
-    timestamp: new Date().toISOString(),
-    gold: {
-      "24k": adjusted24k,
-      "22k": gold22k,
-      "18k": gold18k,
-      "14k": gold14k,
-    },
-    makingChargesPerGram: 850,
-    currency: "INR",
-    isLiveApi,
-    note: `Live bullion rates for ${city}. Flat ₹850/g making charges apply.`,
-  });
+    const usdOzToInrGram = (usdOz: number) =>
+      (usdOz * usdToInr) / TROY_OUNCE_IN_GRAMS;
+
+    const gold24kPerGram = usdOzToInrGram(goldUsdOz);
+    const silverPerGram = usdOzToInrGram(silverUsdOz);
+    const platinumPerGram = usdOzToInrGram(platinumUsdOz);
+
+    const round = (n: number) => Math.round(n);
+
+    return NextResponse.json({
+      city,
+      timestamp: new Date().toISOString(),
+      source: {
+        metals: "gold-api.com (live spot, XAU/XAG/XPT, USD/oz)",
+        fx: "open.er-api.com (USD→INR, with frankfurter.dev fallback)",
+      },
+      usdToInr,
+      gold: {
+        "24k": round(gold24kPerGram),
+        "22k": round(gold24kPerGram * (22 / 24)),
+        "18k": round(gold24kPerGram * (18 / 24)),
+        "14k": round(gold24kPerGram * (14 / 24)),
+      },
+      silver: {
+        "999": round(silverPerGram),
+      },
+      platinum: {
+        "950": round(platinumPerGram * 0.95),
+      },
+      makingChargesPerGram: MAKING_CHARGE_PER_GRAM,
+      currency: "INR",
+      isLiveApi: true,
+      note: `Live spot bullion rates converted to INR per gram. Flat ₹${MAKING_CHARGE_PER_GRAM}/g making charges apply on top at Soni Diamonds.`,
+    });
+  } catch (error) {
+    console.error("Failed to fetch live bullion rates:", error);
+    return NextResponse.json(
+      {
+        error: "Live rate sources are temporarily unavailable. Please try again shortly.",
+        isLiveApi: false,
+      },
+      { status: 502 }
+    );
+  }
 }
